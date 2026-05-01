@@ -1,18 +1,14 @@
--- ============================================================
---  MARITIME PORT MANAGEMENT SYSTEM — Full Schema + Sample Data
---  Compatible with MySQL 5.7+ / MariaDB
--- ============================================================
+--  MARITIME PORT MANAGEMENT SYSTEM — Full Schema with Sample Data
+--  Compatible with MySQL 5.7+ or MariaDB
 
 CREATE DATABASE IF NOT EXISTS maritime_port CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE maritime_port;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ============================================================
 -- DROP ORDER (reverse dependency)
--- ============================================================
+
 DROP TABLE IF EXISTS contains;
-DROP TABLE IF EXISTS covers_cargo;
 DROP TABLE IF EXISTS handles;
 DROP TABLE IF EXISTS inspects;
 DROP TABLE IF EXISTS scheduled_for;
@@ -42,9 +38,9 @@ DROP TABLE IF EXISTS government;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ============================================================
 -- SHIPPING COMPANY
--- ============================================================
+
+
 CREATE TABLE shipping_company (
     company_id   INT AUTO_INCREMENT PRIMARY KEY,
     company_name VARCHAR(120) NOT NULL,
@@ -53,20 +49,21 @@ CREATE TABLE shipping_company (
 
 CREATE TABLE company_contact_info (
     id         INT AUTO_INCREMENT PRIMARY KEY,
-    company_id INT         NOT NULL,
+    company_id INT          NOT NULL,
     contact    VARCHAR(200) NOT NULL,
     FOREIGN KEY (company_id) REFERENCES shipping_company(company_id) ON DELETE CASCADE
 );
 
--- ============================================================
+
 -- SHIP (disjoint total specialization)
 -- ship_type must be one of: BULK, TANKER, CONTAINER
--- ============================================================
+
+
 CREATE TABLE ship (
     ship_imo   VARCHAR(20)  PRIMARY KEY,
     ship_name  VARCHAR(120) NOT NULL,
     flag_state VARCHAR(80)  NOT NULL,
-    tonnage    DECIMAL(12,2),                       -- derived/stored
+    tonnage    DECIMAL(12,2),
     ship_type  ENUM('BULK','TANKER','CONTAINER') NOT NULL,
     company_id INT          NOT NULL,
     FOREIGN KEY (company_id) REFERENCES shipping_company(company_id)
@@ -80,8 +77,8 @@ CREATE TABLE bulk_vessel (
 );
 
 CREATE TABLE tanker (
-    ship_imo       VARCHAR(20) PRIMARY KEY,
-    liquid_type    VARCHAR(60),
+    ship_imo        VARCHAR(20) PRIMARY KEY,
+    liquid_type     VARCHAR(60),
     pressure_rating DECIMAL(8,2),
     FOREIGN KEY (ship_imo) REFERENCES ship(ship_imo) ON DELETE CASCADE
 );
@@ -93,22 +90,23 @@ CREATE TABLE container_ship (
     FOREIGN KEY (ship_imo) REFERENCES ship(ship_imo) ON DELETE CASCADE
 );
 
--- ============================================================
 -- DOCK
--- ============================================================
+
+
 CREATE TABLE dock (
     dock_id      INT AUTO_INCREMENT PRIMARY KEY,
-    dock_name    VARCHAR(80)  NOT NULL,
+    dock_name    VARCHAR(80) NOT NULL,
     dock_type    VARCHAR(60),
     max_capacity INT
 );
 
--- ============================================================
+
 -- SCHEDULE (weak entity — PK is composite: sched_no + dock_id)
--- ============================================================
+
+
 CREATE TABLE schedule (
-    sched_no       INT          NOT NULL,
-    dock_id        INT          NOT NULL,
+    sched_no       INT      NOT NULL,
+    dock_id        INT      NOT NULL,
     arrival_time   DATETIME,
     departure_time DATETIME,
     status         VARCHAR(40),
@@ -116,20 +114,21 @@ CREATE TABLE schedule (
     FOREIGN KEY (dock_id) REFERENCES dock(dock_id) ON DELETE CASCADE
 );
 
--- ============================================================
+
 -- PORT WORKER (overlapping partial specialization)
--- ============================================================
+
+
 CREATE TABLE port_worker (
-    worker_id   INT AUTO_INCREMENT PRIMARY KEY,
-    worker_name VARCHAR(120) NOT NULL,
-    shift_type  VARCHAR(40),
+    worker_id     INT AUTO_INCREMENT PRIMARY KEY,
+    worker_name   VARCHAR(120) NOT NULL,
+    shift_type    VARCHAR(40),
     supervisor_id INT NULL,
     FOREIGN KEY (supervisor_id) REFERENCES port_worker(worker_id)
 );
 
 CREATE TABLE worker_certifications (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    worker_id   INT         NOT NULL,
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    worker_id     INT          NOT NULL,
     certification VARCHAR(120) NOT NULL,
     FOREIGN KEY (worker_id) REFERENCES port_worker(worker_id) ON DELETE CASCADE
 );
@@ -153,22 +152,23 @@ CREATE TABLE inspection_officer (
     FOREIGN KEY (worker_id) REFERENCES port_worker(worker_id) ON DELETE CASCADE
 );
 
--- ============================================================
+
 -- CARGO OWNER (Union / Category)
--- ============================================================
+
+
 CREATE TABLE person (
     person_id   INT AUTO_INCREMENT PRIMARY KEY,
     person_name VARCHAR(120) NOT NULL
 );
 
 CREATE TABLE company_entity (
-    company_reg  VARCHAR(40) PRIMARY KEY,
+    company_reg  VARCHAR(40)  PRIMARY KEY,
     company_name VARCHAR(120) NOT NULL
 );
 
 CREATE TABLE government (
-    govt_code  VARCHAR(40) PRIMARY KEY,
-    govt_name  VARCHAR(120) NOT NULL
+    govt_code VARCHAR(40)  PRIMARY KEY,
+    govt_name VARCHAR(120) NOT NULL
 );
 
 CREATE TABLE cargo_owner (
@@ -180,7 +180,7 @@ CREATE TABLE cargo_owner (
     FOREIGN KEY (person_id)   REFERENCES person(person_id),
     FOREIGN KEY (company_reg) REFERENCES company_entity(company_reg),
     FOREIGN KEY (govt_code)   REFERENCES government(govt_code),
-    -- Only one FK set at a time
+    -- Only one FK set at a time (from Code 1 — keeps data integrity)
     CONSTRAINT chk_owner CHECK (
         (person_id IS NOT NULL AND company_reg IS NULL AND govt_code IS NULL) OR
         (person_id IS NULL AND company_reg IS NOT NULL AND govt_code IS NULL) OR
@@ -188,34 +188,34 @@ CREATE TABLE cargo_owner (
     )
 );
 
--- ============================================================
 -- MANIFEST
--- ============================================================
+
+
 CREATE TABLE manifest (
-    manifest_no  INT AUTO_INCREMENT PRIMARY KEY,
-    issue_date   DATE,
-    total_items  INT DEFAULT 0,    -- derived; updated via trigger
-    ship_imo     VARCHAR(20) NOT NULL,
-    company_id   INT         NOT NULL,
+    manifest_no INT AUTO_INCREMENT PRIMARY KEY,
+    issue_date  DATE,
+    total_items INT DEFAULT 0,    -- derived; updated via trigger
+    ship_imo    VARCHAR(20) NOT NULL,
+    company_id  INT         NOT NULL,
     FOREIGN KEY (ship_imo)   REFERENCES ship(ship_imo),
     FOREIGN KEY (company_id) REFERENCES shipping_company(company_id)
 );
 
--- ============================================================
 -- CUSTOMS INSPECTION
--- ============================================================
+
+
 CREATE TABLE customs_inspection (
     inspection_id  INT AUTO_INCREMENT PRIMARY KEY,
     insp_date      DATE,
     outcome        VARCHAR(80),
     inspector_name VARCHAR(120),
-    worker_id      INT NULL,       -- conducting Inspection Officer
+    worker_id      INT NULL,
     FOREIGN KEY (worker_id) REFERENCES inspection_officer(worker_id)
 );
 
--- ============================================================
 -- CARGO
--- ============================================================
+
+
 CREATE TABLE cargo (
     cargo_id      INT AUTO_INCREMENT PRIMARY KEY,
     cargo_type    VARCHAR(80),
@@ -238,9 +238,10 @@ CREATE TABLE cargo_hazard_class (
     FOREIGN KEY (cargo_id) REFERENCES cargo(cargo_id) ON DELETE CASCADE
 );
 
--- ============================================================
--- JUNCTION TABLES
--- ============================================================
+
+-- JUNCTION TABLES (for relationships)
+
+
 CREATE TABLE berths_at (
     dock_id        INT         NOT NULL,
     ship_imo       VARCHAR(20) NOT NULL,
@@ -269,8 +270,8 @@ CREATE TABLE assigned_to (
 );
 
 CREATE TABLE handles (
-    worker_id    INT         NOT NULL,
-    cargo_id     INT         NOT NULL,
+    worker_id     INT         NOT NULL,
+    cargo_id      INT         NOT NULL,
     handling_date DATE,
     PRIMARY KEY (worker_id, cargo_id),
     FOREIGN KEY (worker_id) REFERENCES port_worker(worker_id),
@@ -293,9 +294,13 @@ CREATE TABLE contains (
     FOREIGN KEY (ship_imo) REFERENCES ship(ship_imo)
 );
 
--- ============================================================
--- TRIGGER: update total_items in manifest when cargo changes
--- ============================================================
+
+-- TRIGGERS (with DROP IF EXISTS - safe to re-run)
+
+
+DROP TRIGGER IF EXISTS trg_cargo_insert;
+DROP TRIGGER IF EXISTS trg_cargo_delete;
+
 DELIMITER $$
 
 CREATE TRIGGER trg_cargo_insert
@@ -318,9 +323,9 @@ END$$
 
 DELIMITER ;
 
--- ============================================================
--- SAMPLE DATA
--- ============================================================
+
+-- SAMPLE DATA 
+
 
 -- Shipping Companies
 INSERT INTO shipping_company (company_name, country) VALUES
@@ -347,7 +352,7 @@ INSERT INTO ship (ship_imo, ship_name, flag_state, tonnage, ship_type, company_i
 INSERT INTO container_ship (ship_imo, teu_capacity, reefer_slots) VALUES
 ('IMO9321483', 15552, 1000),
 ('IMO9723456', 19224, 1200),
-('IMO9888001', 14000, 900);
+('IMO9888001', 14000,  900);
 
 INSERT INTO bulk_vessel (ship_imo, cargo_class, max_load) VALUES
 ('IMO9612345', 'Grain/Coal', 80000.00);
@@ -371,11 +376,11 @@ INSERT INTO schedule (sched_no, dock_id, arrival_time, departure_time, status) V
 
 -- Port Workers
 INSERT INTO port_worker (worker_name, shift_type, supervisor_id) VALUES
-('Ahmed Khan',    'Morning',   NULL),
-('Sara Malik',    'Night',     1),
-('James Cooper',  'Morning',   1),
-('Lina Chen',     'Evening',   1),
-('Tariq Mahmood', 'Night',     2);
+('Ahmed Khan',    'Morning', NULL),
+('Sara Malik',    'Night',   1),
+('James Cooper',  'Morning', 1),
+('Lina Chen',     'Evening', 1),
+('Tariq Mahmood', 'Night',   2);
 
 INSERT INTO worker_certifications (worker_id, certification) VALUES
 (1, 'Forklift Operation'),
@@ -385,15 +390,21 @@ INSERT INTO worker_certifications (worker_id, certification) VALUES
 (4, 'Port Security'),
 (5, 'First Aid');
 
--- Subtypes (overlapping)
-INSERT INTO dock_worker    (worker_id, assigned_zone)  VALUES (1, 'Zone A'), (3, 'Zone B');
-INSERT INTO crane_operator (worker_id, crane_licence)  VALUES (2, 'CR-4521'), (3, 'CR-7890');
-INSERT INTO inspection_officer (worker_id, badge_no)   VALUES (4, 'IO-001'), (5, 'IO-002');
+-- Worker Subtypes (overlapping)
+INSERT INTO dock_worker    (worker_id, assigned_zone) VALUES (1, 'Zone A'), (3, 'Zone B');
+INSERT INTO crane_operator (worker_id, crane_licence) VALUES (2, 'CR-4521'), (3, 'CR-7890');
+INSERT INTO inspection_officer (worker_id, badge_no)  VALUES (4, 'IO-001'), (5, 'IO-002');
 
 -- Cargo Owners
 INSERT INTO person (person_name) VALUES ('Ali Hassan'), ('Emma Schulz');
-INSERT INTO company_entity (company_reg, company_name) VALUES ('REG-UK-001', 'BritishGoods Ltd'), ('REG-CN-002', 'Shanghai Exports');
-INSERT INTO government (govt_code, govt_name) VALUES ('GOV-PK', 'Pakistan Ministry of Commerce'), ('GOV-DE', 'German Federal Trade Office');
+
+INSERT INTO company_entity (company_reg, company_name) VALUES
+('REG-UK-001', 'BritishGoods Ltd'),
+('REG-CN-002', 'Shanghai Exports');
+
+INSERT INTO government (govt_code, govt_name) VALUES
+('GOV-PK', 'Pakistan Ministry of Commerce'),
+('GOV-DE', 'German Federal Trade Office');
 
 INSERT INTO cargo_owner (owner_type, person_id, company_reg, govt_code) VALUES
 ('PERSON',     1,    NULL,         NULL),
@@ -412,9 +423,9 @@ INSERT INTO manifest (issue_date, ship_imo, company_id) VALUES
 
 -- Customs Inspections
 INSERT INTO customs_inspection (insp_date, outcome, inspector_name, worker_id) VALUES
-('2025-07-01', 'Cleared',  'Officer Lina Chen',     4),
-('2025-07-03', 'Held',     'Officer Tariq Mahmood', 5),
-('2025-07-05', 'Cleared',  'Officer Lina Chen',     4);
+('2025-07-01', 'Cleared', 'Officer Lina Chen',     4),
+('2025-07-03', 'Held',    'Officer Tariq Mahmood', 5),
+('2025-07-05', 'Cleared', 'Officer Lina Chen',     4);
 
 -- Cargo
 INSERT INTO cargo (cargo_type, weight_kg, owner_id, manifest_no, quantity, inspection_id) VALUES
@@ -437,26 +448,30 @@ INSERT INTO berths_at (dock_id, ship_imo, berth_date, berth_duration) VALUES
 (3, 'IMO9456789', '2025-07-06', 24);
 
 -- Scheduled For
-INSERT INTO scheduled_for VALUES
-(1,1,'IMO9321483'),
-(2,1,'IMO9723456'),
-(1,2,'IMO9612345'),
-(1,3,'IMO9456789');
+INSERT INTO scheduled_for (sched_no, dock_id, ship_imo) VALUES
+(1, 1, 'IMO9321483'),
+(2, 1, 'IMO9723456'),
+(1, 2, 'IMO9612345'),
+(1, 3, 'IMO9456789');
 
 -- Assigned To
-INSERT INTO assigned_to VALUES
-(1,1),(1,2),(2,3),(3,4),(4,5);
+INSERT INTO assigned_to (dock_id, worker_id) VALUES
+(1, 1), (1, 2), (2, 3), (3, 4), (4, 5);
 
 -- Handles
-INSERT INTO handles VALUES
-(1,1,'2025-07-01'),(2,2,'2025-07-01'),(3,3,'2025-07-03'),(4,4,'2025-07-05');
+INSERT INTO handles (worker_id, cargo_id, handling_date) VALUES
+(1, 1, '2025-07-01'),
+(2, 2, '2025-07-01'),
+(3, 3, '2025-07-03'),
+(4, 4, '2025-07-05');
 
 -- Inspects (junction)
-INSERT INTO inspects VALUES (1,1),(1,2),(2,3),(3,4);
+INSERT INTO inspects (inspection_id, manifest_no) VALUES
+(1, 1), (1, 2), (2, 3), (3, 4);
 
 -- Contains
-INSERT INTO contains VALUES
-(1,'IMO9321483'),(2,'IMO9321483'),
-(3,'IMO9723456'),
-(4,'IMO9612345'),
-(5,'IMO9888001'),(6,'IMO9888001');
+INSERT INTO contains (cargo_id, ship_imo) VALUES
+(1, 'IMO9321483'), (2, 'IMO9321483'),
+(3, 'IMO9723456'),
+(4, 'IMO9612345'),
+(5, 'IMO9888001'), (6, 'IMO9888001');
