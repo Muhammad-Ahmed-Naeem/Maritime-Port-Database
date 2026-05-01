@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maritime Port Management System</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;
+  --surface:#111827;
+  --surface2:#1a2235;
+  --border:#1e2d45;
+  --accent:#0ea5e9;
+  --accent2:#06b6d4;
+  --gold:#f59e0b;
+  --green:#10b981;
+  --red:#ef4444;
+  --orange:#f97316;
+  --text:#e2e8f0;
+  --muted:#64748b;
+  --font:'Courier New',monospace;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Header ────────────────────────────────────────────── */
+header{
+  background:var(--surface);
+  border-bottom:2px solid var(--accent);
+  padding:0 1.5rem;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  height:56px;
+  position:sticky;top:0;z-index:100;
+}
+.logo{
+  font-size:1.1rem;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:2px;
+  white-space:nowrap;
+}
+.logo span{color:var(--gold)}
+.subtitle{color:var(--muted);font-size:.7rem;letter-spacing:1px}
+header .status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  margin-left:auto;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Layout ────────────────────────────────────────────── */
+.layout{display:flex;min-height:calc(100vh - 56px)}
+
+/* ── Sidebar ───────────────────────────────────────────── */
+.sidebar{
+  width:200px;
+  min-width:200px;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:.75rem 0;
+  position:sticky;
+  top:56px;
+  height:calc(100vh - 56px);
+  overflow-y:auto;
+}
+.sidebar-section{
+  padding:.4rem 1rem .2rem;
+  font-size:.6rem;
+  color:var(--muted);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  border-top:1px solid var(--border);
+  margin-top:.4rem;
+}
+.sidebar-section:first-child{border-top:none;margin-top:0}
+.nav-btn{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  width:100%;
+  padding:.5rem 1rem;
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-family:var(--font);
+  font-size:.75rem;
+  cursor:pointer;
+  text-align:left;
+  transition:all .15s;
+  letter-spacing:.5px;
+}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{
+  background:rgba(14,165,233,.12);
+  color:var(--accent);
+  border-left:2px solid var(--accent);
+}
+.nav-icon{font-size:1rem;width:1.2rem;text-align:center}
+
+/* ── Main ──────────────────────────────────────────────── */
+main{flex:1;padding:1.5rem;overflow-y:auto}
+
+/* ── Page ──────────────────────────────────────────────── */
+.page{display:none}
+.page.active{display:block}
+
+.page-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.25rem;
+  flex-wrap:wrap;
+  gap:.75rem;
+}
+.page-title{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:1px;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+.page-title span{color:var(--muted);font-size:.8rem;font-weight:400}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn{
+  padding:.45rem 1rem;
+  border:1px solid;
+  border-radius:4px;
+  font-family:var(--font);
+  font-size:.75rem;
+  cursor:pointer;
+  transition:all .15s;
+  letter-spacing:.5px;
+}
+.btn-primary{
+  background:rgba(14,165,233,.15);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.btn-primary:hover{background:rgba(14,165,233,.3)}
+.btn-danger{
+  background:rgba(239,68,68,.12);
+  border-color:var(--red);
+  color:var(--red);
+  padding:.3rem .6rem;
+  font-size:.7rem;
+}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-edit{
+  background:rgba(245,158,11,.1);
+  border-color:var(--gold);
+  color:var(--gold);
+  padding:.3rem .6rem;
+  font-size:.7rem;
+}
+.btn-edit:hover{background:rgba(245,158,11,.25)}
+.btn-sm{padding:.25rem .6rem;font-size:.7rem}
+
+/* ── Search ────────────────────────────────────────────── */
+.search-bar{
+  display:flex;
+  gap:.5rem;
+  align-items:center;
+}
+.search-bar input{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:.4rem .75rem;
+  border-radius:4px;
+  font-family:var(--font);
+  font-size:.75rem;
+  width:220px;
+}
+.search-bar input:focus{outline:none;border-color:var(--accent)}
+
+/* ── Table ─────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+thead{background:var(--surface2)}
+th{
+  padding:.6rem .8rem;
+  text-align:left;
+  color:var(--muted);
+  font-weight:600;
+  letter-spacing:1px;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td{
+  padding:.55rem .8rem;
+  border-bottom:1px solid rgba(30,45,69,.6);
+  vertical-align:middle;
+}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(14,165,233,.04)}
+.badge{
+  display:inline-block;
+  padding:.15rem .5rem;
+  border-radius:3px;
+  font-size:.65rem;
+  letter-spacing:.5px;
+  font-weight:600;
+}
+.badge-blue{background:rgba(14,165,233,.15);color:var(--accent)}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-orange{background:rgba(249,115,22,.15);color:var(--orange)}
+.badge-gold{background:rgba(245,158,11,.15);color:var(--gold)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-muted{background:rgba(100,116,139,.15);color:var(--muted)}
+
+/* ── Modal ─────────────────────────────────────────────── */
+.modal-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
+  z-index:200;
+  align-items:center;
+  justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);
+  border:1px solid var(--accent);
+  border-radius:8px;
+  padding:1.5rem;
+  width:min(520px,96vw);
+  max-height:90vh;
+  overflow-y:auto;
+}
+.modal-title{
+  font-size:.9rem;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:1.25rem;
+  letter-spacing:1px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.modal-title button{
+  background:none;border:none;color:var(--muted);
+  font-size:1.2rem;cursor:pointer;
+}
+.modal-title button:hover{color:var(--text)}
+
+/* ── Form ──────────────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.form-grid.single{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:.3rem}
+.field label{font-size:.65rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.field input,.field select,.field textarea{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:.45rem .7rem;
+  border-radius:4px;
+  font-family:var(--font);
+  font-size:.75rem;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--accent)
+}
+.field select option{background:var(--surface2)}
+.field.span2{grid-column:span 2}
+.modal-actions{
+  display:flex;
+  gap:.75rem;
+  justify-content:flex-end;
+  margin-top:1.25rem;
+  padding-top:1rem;
+  border-top:1px solid var(--border);
+}
+.subtype-section{
+  grid-column:span 2;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:.75rem;
+}
+.subtype-section label{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:.75rem;color:var(--text);cursor:pointer;
+  margin-bottom:.5rem;
+}
+.subtype-section input[type=checkbox]{accent-color:var(--accent)}
+.subtype-fields{display:none;margin-top:.5rem;gap:.5rem;flex-direction:column}
+.subtype-fields.visible{display:flex}
+
+/* ── Toast ─────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:var(--surface);
+  border:1px solid var(--green);
+  color:var(--green);
+  padding:.6rem 1rem;
+  border-radius:4px;
+  font-size:.75rem;
+  letter-spacing:.5px;
+  z-index:999;
+  transform:translateY(100px);
+  opacity:0;
+  transition:all .3s;
+  max-width:300px;
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.error{border-color:var(--red);color:var(--red)}
+
+/* ── Stats row ─────────────────────────────────────────── */
+.stats-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:.75rem;
+  margin-bottom:1.5rem;
+}
+.stat-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:1rem;
+}
+.stat-label{font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-bottom:.3rem}
+.stat-val{font-size:1.4rem;color:var(--accent);font-weight:700}
+
+/* ── Empty state ───────────────────────────────────────── */
+.empty{
+  text-align:center;padding:2rem;color:var(--muted);font-size:.8rem;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media(max-width:640px){
+  .sidebar{width:52px;min-width:52px}
+  .nav-btn span:not(.nav-icon){display:none}
+  .form-grid{grid-template-columns:1fr}
+  .field.span2{grid-column:span 1}
+  .subtype-section{grid-column:span 1}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⚓ MARITIME <span>PORT</span></div>
+    <div class="subtitle">DATABASE MANAGEMENT SYSTEM — PHASE 2</div>
+  </div>
+  <div class="status-dot" id="dbStatus" title="Checking DB..."></div>
+</header>
+
+<div class="layout">
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="sidebar-section">Fleet</div>
+  <button class="nav-btn active" onclick="show('ships')"><span class="nav-icon">🚢</span><span>Ships</span></button>
+  <button class="nav-btn" onclick="show('companies')"><span class="nav-icon">🏢</span><span>Companies</span></button>
+
+  <div class="sidebar-section">Port</div>
+  <button class="nav-btn" onclick="show('docks')"><span class="nav-icon">⚓</span><span>Docks</span></button>
+  <button class="nav-btn" onclick="show('schedules')"><span class="nav-icon">📅</span><span>Schedules</span></button>
+  <button class="nav-btn" onclick="show('berths')"><span class="nav-icon">🔗</span><span>Berths</span></button>
+
+  <div class="sidebar-section">Staff</div>
+  <button class="nav-btn" onclick="show('workers')"><span class="nav-icon">👷</span><span>Workers</span></button>
+
+  <div class="sidebar-section">Cargo</div>
+  <button class="nav-btn" onclick="show('cargo')"><span class="nav-icon">📦</span><span>Cargo</span></button>
+  <button class="nav-btn" onclick="show('manifests')"><span class="nav-icon">📋</span><span>Manifests</span></button>
+  <button class="nav-btn" onclick="show('inspections')"><span class="nav-icon">🔍</span><span>Inspections</span></button>
+</nav>
+
+<!-- ── Main ───────────────────────────────────────────── -->
+<main>
+
+<!-- SHIPS -->
+<div class="page active" id="page-ships">
+  <div class="page-header">
+    <div class="page-title">🚢 Ships <span>— Fleet Registry</span></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <div class="search-bar"><input type="text" id="ship-search" placeholder="Search ships…" oninput="filterTable('ship-tbody','ship-search')"></div>
+      <button class="btn btn-primary" onclick="openShipModal()">+ Add Ship</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>IMO</th><th>Name</th><th>Flag</th><th>Type</th><th>Tonnage</th><th>Company</th><th>Details</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="ship-tbody"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- COMPANIES -->
+<div class="page" id="page-companies">
+  <div class="page-header">
+    <div class="page-title">🏢 Shipping Companies</div>
+    <div style="display:flex;gap:.5rem">
+      <div class="search-bar"><input type="text" id="co-search" placeholder="Search…" oninput="filterTable('co-tbody','co-search')"></div>
+      <button class="btn btn-primary" onclick="openCoModal()">+ Add Company</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Company Name</th><th>Country</th><th>Actions</th></tr></thead>
+      <tbody id="co-tbody"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DOCKS -->
+<div class="page" id="page-docks">
+  <div class="page-header">
+    <div class="page-title">⚓ Docks</div>
+    <div style="display:flex;gap:.5rem">
+      <div class="search-bar"><input type="text" id="dock-search" placeholder="Search…" oninput="filterTable('dock-tbody','dock-search')"></div>
+      <button class="btn btn-primary" onclick="openDockModal()">+ Add Dock</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Max Capacity</th><th>Actions</th></tr></thead>
+      <tbody id="dock-tbody"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SCHEDULES -->
+<div class="page" id="page-schedules">
+  <div class="page-header">
+    <div class="page-title">📅 Schedules <span>— Dock Scheduling</span></div>
+    <button class="btn btn-primary" onclick="openSchedModal()">+ Add Schedule</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Sched No</th><th>Dock</th><th>Arrival</th><th>Departure</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="sched-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- BERTHS -->
+<div class="page" id="page-berths">
+  <div class="page-header">
+    <div class="page-title">🔗 Berths At <span>— Ship-Dock Assignment</span></div>
+    <button class="btn btn-primary" onclick="openBerthModal()">+ Add Berth</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dock</th><th>Ship</th><th>Berth Date</th><th>Duration (hrs)</th><th>Actions</th></tr></thead>
+      <tbody id="berth-tbody"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- WORKERS -->
+<div class="page" id="page-workers">
+  <div class="page-header">
+    <div class="page-title">👷 Port Workers</div>
+    <div style="display:flex;gap:.5rem">
+      <div class="search-bar"><input type="text" id="wk-search" placeholder="Search…" oninput="filterTable('wk-tbody','wk-search')"></div>
+      <button class="btn btn-primary" onclick="openWorkerModal()">+ Add Worker</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Shift</th><th>Supervisor</th><th>Roles</th><th>Actions</th></tr></thead>
+      <tbody id="wk-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CARGO -->
+<div class="page" id="page-cargo">
+  <div class="page-header">
+    <div class="page-title">📦 Cargo</div>
+    <div style="display:flex;gap:.5rem">
+      <div class="search-bar"><input type="text" id="cargo-search" placeholder="Search…" oninput="filterTable('cargo-tbody','cargo-search')"></div>
+      <button class="btn btn-primary" onclick="openCargoModal()">+ Add Cargo</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Type</th><th>Weight (kg)</th><th>Qty</th><th>Owner</th><th>Manifest</th><th>Inspection</th><th>Actions</th></tr></thead>
+      <tbody id="cargo-tbody"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MANIFESTS -->
+<div class="page" id="page-manifests">
+  <div class="page-header">
+    <div class="page-title">📋 Manifests</div>
+    <button class="btn btn-primary" onclick="openManifestModal()">+ Add Manifest</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>No</th><th>Issue Date</th><th>Ship</th><th>Company</th><th>Total Items</th><th>Actions</th></tr></thead>
+      <tbody id="mani-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- INSPECTIONS -->
+<div class="page" id="page-inspections">
+  <div class="page-header">
+    <div class="page-title">🔍 Customs Inspections</div>
+    <button class="btn btn-primary" onclick="openInspModal()">+ Add Inspection</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Date</th><th>Outcome</th><th>Inspector</th><th>Officer</th><th>Actions</th></tr></thead>
+      <tbody id="insp-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ── MODALS ──────────────────────────────────────────────── -->
+
+<!-- SHIP MODAL -->
+<div class="modal-overlay" id="ship-modal">
+<div class="modal">
+  <div class="modal-title">
+    <span id="ship-modal-title">Add Ship</span>
+    <button onclick="closeModal('ship-modal')">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="field"><label>IMO Number *</label><input id="s-imo" placeholder="IMO9321483"></div>
+    <div class="field"><label>Ship Name *</label><input id="s-name"></div>
+    <div class="field"><label>Flag State *</label><input id="s-flag"></div>
+    <div class="field"><label>Tonnage</label><input id="s-tonnage" type="number"></div>
+    <div class="field"><label>Type *</label>
+      <select id="s-type" onchange="toggleShipSubtype()">
+        <option value="CONTAINER">Container Ship</option>
+        <option value="BULK">Bulk Vessel</option>
+        <option value="TANKER">Tanker</option>
+      </select>
+    </div>
+    <div class="field"><label>Company *</label><select id="s-company"></select></div>
+
+    <div class="subtype-section" id="sub-container">
+      <div style="font-size:.7rem;color:var(--accent2);margin-bottom:.5rem">CONTAINER SHIP DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+        <div class="field"><label>TEU Capacity</label><input id="s-teu" type="number"></div>
+        <div class="field"><label>Reefer Slots</label><input id="s-reefer" type="number"></div>
+      </div>
+    </div>
+    <div class="subtype-section" id="sub-bulk" style="display:none">
+      <div style="font-size:.7rem;color:var(--accent2);margin-bottom:.5rem">BULK VESSEL DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+        <div class="field"><label>Cargo Class</label><input id="s-cargoclass"></div>
+        <div class="field"><label>Max Load (t)</label><input id="s-maxload" type="number"></div>
+      </div>
+    </div>
+    <div class="subtype-section" id="sub-tanker" style="display:none">
+      <div style="font-size:.7rem;color:var(--accent2);margin-bottom:.5rem">TANKER DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+        <div class="field"><label>Liquid Type</label><input id="s-liquid"></div>
+        <div class="field"><label>Pressure Rating</label><input id="s-pressure" type="number" step="0.01"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('ship-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveShip()">Save Ship</button>
+  </div>
+</div>
+</div>
+
+<!-- COMPANY MODAL -->
+<div class="modal-overlay" id="co-modal">
+<div class="modal">
+  <div class="modal-title"><span id="co-modal-title">Add Company</span><button onclick="closeModal('co-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Company Name *</label><input id="co-name"></div>
+    <div class="field span2"><label>Country *</label><input id="co-country"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('co-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCompany()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- DOCK MODAL -->
+<div class="modal-overlay" id="dock-modal">
+<div class="modal">
+  <div class="modal-title"><span id="dock-modal-title">Add Dock</span><button onclick="closeModal('dock-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Dock Name *</label><input id="dk-name"></div>
+    <div class="field"><label>Dock Type</label><input id="dk-type" placeholder="Container / Bulk / Tanker"></div>
+    <div class="field"><label>Max Capacity</label><input id="dk-cap" type="number"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('dock-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveDock()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="sched-modal">
+<div class="modal">
+  <div class="modal-title"><span id="sched-modal-title">Add Schedule</span><button onclick="closeModal('sched-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field"><label>Schedule No *</label><input id="sc-no" type="number"></div>
+    <div class="field"><label>Dock *</label><select id="sc-dock"></select></div>
+    <div class="field"><label>Arrival Time</label><input id="sc-arrival" type="datetime-local"></div>
+    <div class="field"><label>Departure Time</label><input id="sc-depart" type="datetime-local"></div>
+    <div class="field span2"><label>Status</label>
+      <select id="sc-status">
+        <option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('sched-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveSchedule()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- BERTH MODAL -->
+<div class="modal-overlay" id="berth-modal">
+<div class="modal">
+  <div class="modal-title"><span>Add Berth</span><button onclick="closeModal('berth-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field"><label>Dock *</label><select id="bt-dock"></select></div>
+    <div class="field"><label>Ship *</label><select id="bt-ship"></select></div>
+    <div class="field"><label>Berth Date *</label><input id="bt-date" type="date"></div>
+    <div class="field"><label>Duration (hrs)</label><input id="bt-dur" type="number"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('berth-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveBerth()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- WORKER MODAL -->
+<div class="modal-overlay" id="worker-modal">
+<div class="modal">
+  <div class="modal-title"><span id="wk-modal-title">Add Worker</span><button onclick="closeModal('worker-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Worker Name *</label><input id="wk-name"></div>
+    <div class="field"><label>Shift Type</label>
+      <select id="wk-shift"><option>Morning</option><option>Evening</option><option>Night</option></select>
+    </div>
+    <div class="field"><label>Supervisor</label><select id="wk-sup"><option value="">None</option></select></div>
+
+    <div class="subtype-section span2">
+      <div style="font-size:.7rem;color:var(--accent2);margin-bottom:.75rem">ROLES (OVERLAPPING — CAN SELECT MULTIPLE)</div>
+      <label><input type="checkbox" id="wk-is-dock" onchange="toggleWkSub('wk-dock-f','wk-is-dock')"> Dock Worker</label>
+      <div class="subtype-fields" id="wk-dock-f">
+        <div class="field"><label>Assigned Zone</label><input id="wk-zone"></div>
+      </div>
+      <label style="margin-top:.5rem"><input type="checkbox" id="wk-is-crane" onchange="toggleWkSub('wk-crane-f','wk-is-crane')"> Crane Operator</label>
+      <div class="subtype-fields" id="wk-crane-f">
+        <div class="field"><label>Crane Licence No</label><input id="wk-licence"></div>
+      </div>
+      <label style="margin-top:.5rem"><input type="checkbox" id="wk-is-insp" onchange="toggleWkSub('wk-insp-f','wk-is-insp')"> Inspection Officer</label>
+      <div class="subtype-fields" id="wk-insp-f">
+        <div class="field"><label>Badge No *</label><input id="wk-badge"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('worker-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveWorker()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- CARGO MODAL -->
+<div class="modal-overlay" id="cargo-modal">
+<div class="modal">
+  <div class="modal-title"><span id="cargo-modal-title">Add Cargo</span><button onclick="closeModal('cargo-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Cargo Type *</label><input id="cg-type"></div>
+    <div class="field"><label>Weight (kg)</label><input id="cg-weight" type="number" step="0.01"></div>
+    <div class="field"><label>Quantity</label><input id="cg-qty" type="number" value="1"></div>
+    <div class="field"><label>Owner *</label><select id="cg-owner"></select></div>
+    <div class="field"><label>Manifest *</label><select id="cg-manifest"></select></div>
+    <div class="field span2"><label>Inspection (optional)</label><select id="cg-insp"><option value="">None</option></select></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('cargo-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCargo()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- MANIFEST MODAL -->
+<div class="modal-overlay" id="mani-modal">
+<div class="modal">
+  <div class="modal-title"><span id="mani-modal-title">Add Manifest</span><button onclick="closeModal('mani-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Issue Date *</label><input id="mn-date" type="date"></div>
+    <div class="field"><label>Ship *</label><select id="mn-ship"></select></div>
+    <div class="field"><label>Company *</label><select id="mn-co"></select></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('mani-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveManifest()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- INSPECTION MODAL -->
+<div class="modal-overlay" id="insp-modal">
+<div class="modal">
+  <div class="modal-title"><span id="insp-modal-title">Add Inspection</span><button onclick="closeModal('insp-modal')">✕</button></div>
+  <div class="form-grid">
+    <div class="field span2"><label>Inspection Date *</label><input id="insp-date" type="date"></div>
+    <div class="field"><label>Outcome</label>
+      <select id="insp-outcome"><option>Cleared</option><option>Held</option><option>Pending</option><option>Rejected</option></select>
+    </div>
+    <div class="field"><label>Inspector Name *</label><input id="insp-name"></div>
+    <div class="field span2"><label>Conducting Officer (optional)</label><select id="insp-officer"><option value="">None</option></select></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('insp-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveInspection()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+const API = 'http://localhost:3000/api';
+
+// ── Globals (cache) ─────────────────────────────────────────
+let companies=[], docks=[], ships=[], workers=[], manifests=[],
+    inspections=[], cargoOwners=[], editingId=null;
+
+// ── Navigation ───────────────────────────────────────────────
+function show(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  event.currentTarget.classList.add('active');
+  loadPage(page);
+}
+
+async function loadPage(p){
+  const loaders={
+    ships:loadShips, companies:loadCompanies, docks:loadDocks,
+    schedules:loadSchedules, berths:loadBerths, workers:loadWorkers,
+    cargo:loadCargo, manifests:loadManifests, inspections:loadInspections
+  };
+  if(loaders[p]) await loaders[p]();
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show'+(err?' error':'');
+  setTimeout(()=>t.className='', 3000);
+}
+
+// ── Search filter ────────────────────────────────────────────
+function filterTable(tbodyId, inputId){
+  const q=document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#'+tbodyId+' tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+// ── Modal helpers ────────────────────────────────────────────
+function closeModal(id){ document.getElementById(id).classList.remove('open'); editingId=null; }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+
+// ── Type badge helper ────────────────────────────────────────
+function typeBadge(t){
+  const map={CONTAINER:'badge-blue',BULK:'badge-gold',TANKER:'badge-orange'};
+  return `<span class="badge ${map[t]||'badge-muted'}">${t}</span>`;
+}
+function statusBadge(s){
+  const map={Completed:'badge-green','In Progress':'badge-blue',Scheduled:'badge-gold',Cancelled:'badge-red',Cleared:'badge-green',Held:'badge-red',Pending:'badge-gold'};
+  return `<span class="badge ${map[s]||'badge-muted'}">${s||'—'}</span>`;
+}
+
+// ── Populate <select> helpers ────────────────────────────────
+function fillSelect(id, items, valKey, labelFn, empty=''){
+  const el=document.getElementById(id);
+  el.innerHTML=(empty?`<option value="">${empty}</option>`:'')+
+    items.map(i=>`<option value="${i[valKey]}">${labelFn(i)}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHIPS
+// ═══════════════════════════════════════════════════════════
+async function loadShips(){
+  try{
+    ships=await fetch(`${API}/ships`).then(r=>r.json());
+    const tbody=document.getElementById('ship-tbody');
+    if(!ships.length){tbody.innerHTML='<tr><td colspan="8" class="empty">No ships found.</td></tr>';return;}
+    tbody.innerHTML=ships.map(s=>{
+      let detail='';
+      if(s.ship_type==='CONTAINER') detail=`TEU: ${s.teu_capacity||'—'}, Reefer: ${s.reefer_slots||'—'}`;
+      if(s.ship_type==='BULK') detail=`Class: ${s.cargo_class||'—'}, Max: ${s.max_load||'—'}t`;
+      if(s.ship_type==='TANKER') detail=`${s.liquid_type||'—'}, ${s.pressure_rating||'—'} bar`;
+      return `<tr>
+        <td><code style="color:var(--muted);font-size:.7rem">${s.ship_imo}</code></td>
+        <td><b>${s.ship_name}</b></td>
+        <td>${s.flag_state}</td>
+        <td>${typeBadge(s.ship_type)}</td>
+        <td>${s.tonnage?Number(s.tonnage).toLocaleString()+' t':'—'}</td>
+        <td>${s.company_name}</td>
+        <td style="color:var(--muted);font-size:.7rem">${detail}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-edit btn-sm" onclick="editShip('${s.ship_imo}')">✏ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteShip('${s.ship_imo}')">✕ Del</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){toast('Failed to load ships: '+e.message,true);}
+}
+
+function toggleShipSubtype(){
+  const t=document.getElementById('s-type').value;
+  document.getElementById('sub-container').style.display=t==='CONTAINER'?'':'none';
+  document.getElementById('sub-bulk').style.display=t==='BULK'?'':'none';
+  document.getElementById('sub-tanker').style.display=t==='TANKER'?'':'none';
+}
+
+async function openShipModal(imo=null){
+  editingId=imo;
+  await loadCompanies();
+  fillSelect('s-company',companies,'company_id',c=>c.company_name);
+  // clear
+  ['s-imo','s-name','s-flag','s-tonnage','s-teu','s-reefer','s-cargoclass','s-maxload','s-liquid','s-pressure']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-type').value='CONTAINER';
+  document.getElementById('ship-modal-title').textContent=imo?'Edit Ship':'Add Ship';
+  document.getElementById('s-imo').disabled=!!imo;
+  if(imo){
+    const s=ships.find(x=>x.ship_imo===imo);
+    if(s){
+      document.getElementById('s-imo').value=s.ship_imo;
+      document.getElementById('s-name').value=s.ship_name;
+      document.getElementById('s-flag').value=s.flag_state;
+      document.getElementById('s-tonnage').value=s.tonnage||'';
+      document.getElementById('s-type').value=s.ship_type;
+      document.getElementById('s-company').value=s.company_id;
+      if(s.ship_type==='CONTAINER'){
+        document.getElementById('s-teu').value=s.teu_capacity||'';
+        document.getElementById('s-reefer').value=s.reefer_slots||'';
+      }
+      if(s.ship_type==='BULK'){
+        document.getElementById('s-cargoclass').value=s.cargo_class||'';
+        document.getElementById('s-maxload').value=s.max_load||'';
+      }
+      if(s.ship_type==='TANKER'){
+        document.getElementById('s-liquid').value=s.liquid_type||'';
+        document.getElementById('s-pressure').value=s.pressure_rating||'';
+      }
+    }
+  }
+  toggleShipSubtype();
+  openModal('ship-modal');
+}
+
+async function saveShip(){
+  const body={
+    ship_imo:document.getElementById('s-imo').value.trim(),
+    ship_name:document.getElementById('s-name').value.trim(),
+    flag_state:document.getElementById('s-flag').value.trim(),
+    tonnage:document.getElementById('s-tonnage').value,
+    ship_type:document.getElementById('s-type').value,
+    company_id:document.getElementById('s-company').value,
+    teu_capacity:document.getElementById('s-teu').value,
+    reefer_slots:document.getElementById('s-reefer').value,
+    cargo_class:document.getElementById('s-cargoclass').value,
+    max_load:document.getElementById('s-maxload').value,
+    liquid_type:document.getElementById('s-liquid').value,
+    pressure_rating:document.getElementById('s-pressure').value,
+  };
+  if(!body.ship_imo||!body.ship_name||!body.flag_state){toast('IMO, Name, Flag are required',true);return;}
+  try{
+    const url=editingId?`${API}/ships/${editingId}`:`${API}/ships`;
+    const method=editingId?'PUT':'POST';
+    const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast(editingId?'Ship updated!':'Ship added!');
+    closeModal('ship-modal');
+    loadShips();
+  }catch(e){toast(e.message,true);}
+}
+
+async function editShip(imo){ await openShipModal(imo); }
+
+async function deleteShip(imo){
+  if(!confirm(`Delete ship ${imo}? This will cascade-delete related records.`))return;
+  try{
+    const r=await fetch(`${API}/ships/${imo}`,{method:'DELETE'});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast('Ship deleted.');
+    loadShips();
+  }catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMPANIES
+// ═══════════════════════════════════════════════════════════
+async function loadCompanies(){
+  try{
+    companies=await fetch(`${API}/companies`).then(r=>r.json());
+    const tbody=document.getElementById('co-tbody');
+    if(!companies.length){tbody.innerHTML='<tr><td colspan="4" class="empty">No companies.</td></tr>';return;}
+    tbody.innerHTML=companies.map(c=>`<tr>
+      <td>${c.company_id}</td>
+      <td><b>${c.company_name}</b></td>
+      <td>${c.country}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editCompany(${c.company_id},'${escHtml(c.company_name)}','${escHtml(c.country)}')">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCompany(${c.company_id})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+function openCoModal(id=null,name='',country=''){
+  editingId=id;
+  document.getElementById('co-modal-title').textContent=id?'Edit Company':'Add Company';
+  document.getElementById('co-name').value=name;
+  document.getElementById('co-country').value=country;
+  openModal('co-modal');
+}
+function editCompany(id,name,country){openCoModal(id,unescHtml(name),unescHtml(country));}
+
+async function saveCompany(){
+  const body={company_name:document.getElementById('co-name').value.trim(),country:document.getElementById('co-country').value.trim()};
+  if(!body.company_name||!body.country){toast('Name and country required',true);return;}
+  try{
+    const url=editingId?`${API}/companies/${editingId}`:`${API}/companies`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast(editingId?'Company updated!':'Company added!');
+    closeModal('co-modal');
+    loadCompanies();
+  }catch(e){toast(e.message,true);}
+}
+
+async function deleteCompany(id){
+  if(!confirm('Delete company? Ships owned by this company must be reassigned first.'))return;
+  try{
+    const r=await fetch(`${API}/companies/${id}`,{method:'DELETE'});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast('Company deleted.'); loadCompanies();
+  }catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DOCKS
+// ═══════════════════════════════════════════════════════════
+async function loadDocks(){
+  try{
+    docks=await fetch(`${API}/docks`).then(r=>r.json());
+    const tbody=document.getElementById('dock-tbody');
+    if(!docks.length){tbody.innerHTML='<tr><td colspan="5" class="empty">No docks.</td></tr>';return;}
+    tbody.innerHTML=docks.map(d=>`<tr>
+      <td>${d.dock_id}</td><td><b>${d.dock_name}</b></td>
+      <td>${d.dock_type||'—'}</td><td>${d.max_capacity||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editDock(${d.dock_id},'${escHtml(d.dock_name)}','${escHtml(d.dock_type||'')}','${d.max_capacity||''}')">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDock(${d.dock_id})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+function openDockModal(id=null,name='',type='',cap=''){
+  editingId=id;
+  document.getElementById('dock-modal-title').textContent=id?'Edit Dock':'Add Dock';
+  document.getElementById('dk-name').value=name;
+  document.getElementById('dk-type').value=type;
+  document.getElementById('dk-cap').value=cap;
+  openModal('dock-modal');
+}
+function editDock(id,name,type,cap){openDockModal(id,unescHtml(name),unescHtml(type),cap);}
+
+async function saveDock(){
+  const body={dock_name:document.getElementById('dk-name').value.trim(),dock_type:document.getElementById('dk-type').value,max_capacity:document.getElementById('dk-cap').value};
+  if(!body.dock_name){toast('Dock name required',true);return;}
+  try{
+    const url=editingId?`${API}/docks/${editingId}`:`${API}/docks`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast('Dock saved!'); closeModal('dock-modal'); loadDocks();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteDock(id){
+  if(!confirm('Delete dock?'))return;
+  try{const r=await fetch(`${API}/docks/${id}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Dock deleted.');loadDocks();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCHEDULES
+// ═══════════════════════════════════════════════════════════
+async function loadSchedules(){
+  try{
+    const rows=await fetch(`${API}/schedules`).then(r=>r.json());
+    const tbody=document.getElementById('sched-tbody');
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No schedules.</td></tr>';return;}
+    tbody.innerHTML=rows.map(s=>`<tr>
+      <td>${s.sched_no}</td>
+      <td>${s.dock_name}</td>
+      <td>${fmt(s.arrival_time)}</td>
+      <td>${fmt(s.departure_time)}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editSchedule(${s.sched_no},${s.dock_id},'${s.arrival_time||''}','${s.departure_time||''}','${s.status||''}')">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSchedule(${s.sched_no},${s.dock_id})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+async function openSchedModal(sno=null,did=null,arr='',dep='',stat='Scheduled'){
+  editingId=sno?{sno,did}:null;
+  await loadDocks();
+  fillSelect('sc-dock',docks,'dock_id',d=>d.dock_name);
+  document.getElementById('sched-modal-title').textContent=sno?'Edit Schedule':'Add Schedule';
+  document.getElementById('sc-no').value=sno||'';
+  document.getElementById('sc-no').disabled=!!sno;
+  document.getElementById('sc-dock').value=did||'';
+  document.getElementById('sc-dock').disabled=!!sno;
+  document.getElementById('sc-arrival').value=arr?arr.replace(' ','T').slice(0,16):'';
+  document.getElementById('sc-depart').value=dep?dep.replace(' ','T').slice(0,16):'';
+  document.getElementById('sc-status').value=stat;
+  openModal('sched-modal');
+}
+function editSchedule(sno,did,arr,dep,stat){openSchedModal(sno,did,arr,dep,stat);}
+
+async function saveSchedule(){
+  const body={
+    sched_no:document.getElementById('sc-no').value,
+    dock_id:document.getElementById('sc-dock').value,
+    arrival_time:document.getElementById('sc-arrival').value||null,
+    departure_time:document.getElementById('sc-depart').value||null,
+    status:document.getElementById('sc-status').value
+  };
+  if(!body.sched_no||!body.dock_id){toast('Schedule No and Dock are required',true);return;}
+  try{
+    let url,method;
+    if(editingId){url=`${API}/schedules/${editingId.sno}/${editingId.did}`;method='PUT';}
+    else{url=`${API}/schedules`;method='POST';}
+    const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    toast('Schedule saved!'); closeModal('sched-modal'); loadSchedules();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteSchedule(sno,did){
+  if(!confirm('Delete schedule?'))return;
+  try{const r=await fetch(`${API}/schedules/${sno}/${did}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadSchedules();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BERTHS
+// ═══════════════════════════════════════════════════════════
+async function loadBerths(){
+  try{
+    const rows=await fetch(`${API}/berths`).then(r=>r.json());
+    const tbody=document.getElementById('berth-tbody');
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="5" class="empty">No berths.</td></tr>';return;}
+    tbody.innerHTML=rows.map(b=>`<tr>
+      <td>${b.dock_name}</td><td>${b.ship_name}</td>
+      <td>${b.berth_date?b.berth_date.split('T')[0]:'—'}</td>
+      <td>${b.berth_duration||'—'} hrs</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteBerth('${b.dock_id}','${b.ship_imo}','${b.berth_date?b.berth_date.split('T')[0]:''}')">✕ Del</button></td>
+      </tr>`).join('');
+  }catch(e){}
+}
+async function openBerthModal(){
+  await Promise.all([loadDocks(),loadShips()]);
+  fillSelect('bt-dock',docks,'dock_id',d=>d.dock_name);
+  fillSelect('bt-ship',ships,'ship_imo',s=>s.ship_name);
+  ['bt-date','bt-dur'].forEach(id=>document.getElementById(id).value='');
+  openModal('berth-modal');
+}
+async function saveBerth(){
+  const body={dock_id:document.getElementById('bt-dock').value,ship_imo:document.getElementById('bt-ship').value,berth_date:document.getElementById('bt-date').value,berth_duration:document.getElementById('bt-dur').value};
+  if(!body.dock_id||!body.ship_imo||!body.berth_date){toast('Dock, Ship, Date are required',true);return;}
+  try{
+    const r=await fetch(`${API}/berths`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    toast('Berth added!');closeModal('berth-modal');loadBerths();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteBerth(did,simo,date){
+  if(!confirm('Remove berth record?'))return;
+  try{const r=await fetch(`${API}/berths/${did}/${simo}/${date}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadBerths();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WORKERS
+// ═══════════════════════════════════════════════════════════
+async function loadWorkers(){
+  try{
+    workers=await fetch(`${API}/workers`).then(r=>r.json());
+    const tbody=document.getElementById('wk-tbody');
+    if(!workers.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No workers.</td></tr>';return;}
+    tbody.innerHTML=workers.map(w=>{
+      const roles=[];
+      if(w.is_dock_worker) roles.push(`<span class="badge badge-blue">Dock</span>`);
+      if(w.is_crane_operator) roles.push(`<span class="badge badge-gold">Crane Op</span>`);
+      if(w.is_inspection_officer) roles.push(`<span class="badge badge-orange">Inspector</span>`);
+      if(!roles.length) roles.push(`<span class="badge badge-muted">General</span>`);
+      return `<tr>
+        <td>${w.worker_id}</td><td><b>${w.worker_name}</b></td>
+        <td>${w.shift_type||'—'}</td>
+        <td>${w.supervisor_name||'<span style="color:var(--muted)">—</span>'}</td>
+        <td>${roles.join(' ')}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-edit btn-sm" onclick="editWorker(${w.worker_id})">✏ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteWorker(${w.worker_id})">✕ Del</button>
+        </td></tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+function toggleWkSub(fid,cbid){
+  document.getElementById(fid).classList.toggle('visible',document.getElementById(cbid).checked);
+}
+
+async function openWorkerModal(id=null){
+  editingId=id;
+  await loadWorkers();
+  const sel=document.getElementById('wk-sup');
+  sel.innerHTML='<option value="">None</option>'+
+    workers.filter(w=>w.worker_id!==id).map(w=>`<option value="${w.worker_id}">${w.worker_name}</option>`).join('');
+  // reset
+  ['wk-name','wk-zone','wk-licence','wk-badge'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('wk-shift').value='Morning';
+  ['wk-is-dock','wk-is-crane','wk-wk-is-insp'].forEach(i=>{const el=document.getElementById(i);if(el)el.checked=false;});
+  document.getElementById('wk-is-dock').checked=false;
+  document.getElementById('wk-is-crane').checked=false;
+  document.getElementById('wk-is-insp').checked=false;
+  ['wk-dock-f','wk-crane-f','wk-insp-f'].forEach(i=>document.getElementById(i).classList.remove('visible'));
+  document.getElementById('wk-modal-title').textContent=id?'Edit Worker':'Add Worker';
+  if(id){
+    const w=workers.find(x=>x.worker_id===id);
+    if(w){
+      document.getElementById('wk-name').value=w.worker_name;
+      document.getElementById('wk-shift').value=w.shift_type||'Morning';
+      document.getElementById('wk-sup').value=w.supervisor_id||'';
+      // roles
+      if(w.is_dock_worker){document.getElementById('wk-is-dock').checked=true;document.getElementById('wk-dock-f').classList.add('visible');document.getElementById('wk-zone').value=w.assigned_zone||'';}
+      if(w.is_crane_operator){document.getElementById('wk-is-crane').checked=true;document.getElementById('wk-crane-f').classList.add('visible');document.getElementById('wk-licence').value=w.crane_licence||'';}
+      if(w.is_inspection_officer){document.getElementById('wk-is-insp').checked=true;document.getElementById('wk-insp-f').classList.add('visible');document.getElementById('wk-badge').value=w.badge_no||'';}
+    }
+  }
+  openModal('worker-modal');
+}
+function editWorker(id){openWorkerModal(id);}
+
+async function saveWorker(){
+  const body={
+    worker_name:document.getElementById('wk-name').value.trim(),
+    shift_type:document.getElementById('wk-shift').value,
+    supervisor_id:document.getElementById('wk-sup').value||null,
+    is_dock_worker:document.getElementById('wk-is-dock').checked,
+    assigned_zone:document.getElementById('wk-zone').value,
+    is_crane_operator:document.getElementById('wk-is-crane').checked,
+    crane_licence:document.getElementById('wk-licence').value,
+    is_inspection_officer:document.getElementById('wk-is-insp').checked,
+    badge_no:document.getElementById('wk-badge').value,
+  };
+  if(!body.worker_name){toast('Worker name required',true);return;}
+  if(body.is_inspection_officer&&!body.badge_no){toast('Badge No required for Inspection Officers',true);return;}
+  try{
+    const url=editingId?`${API}/workers/${editingId}`:`${API}/workers`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    toast('Worker saved!');closeModal('worker-modal');loadWorkers();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteWorker(id){
+  if(!confirm('Delete worker?'))return;
+  try{const r=await fetch(`${API}/workers/${id}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadWorkers();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CARGO
+// ═══════════════════════════════════════════════════════════
+async function loadCargo(){
+  try{
+    const rows=await fetch(`${API}/cargo`).then(r=>r.json());
+    const tbody=document.getElementById('cargo-tbody');
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="empty">No cargo.</td></tr>';return;}
+    tbody.innerHTML=rows.map(c=>`<tr>
+      <td>${c.cargo_id}</td><td><b>${c.cargo_type}</b></td>
+      <td>${c.weight_kg?Number(c.weight_kg).toLocaleString()+' kg':'—'}</td>
+      <td>${c.quantity||1}</td>
+      <td><span class="badge badge-muted">${c.owner_type}</span> ${c.owner_name||'—'}</td>
+      <td>#${c.manifest_no}</td>
+      <td>${c.inspection_outcome?statusBadge(c.inspection_outcome):'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editCargo(${c.cargo_id})">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCargo(${c.cargo_id})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+async function openCargoModal(id=null){
+  editingId=id;
+  await Promise.all([loadCompanies(),loadManifests(),loadInspections()]);
+  cargoOwners=await fetch(`${API}/cargo-owners`).then(r=>r.json());
+  fillSelect('cg-owner',cargoOwners,'owner_id',o=>`[${o.owner_type}] ${o.display_name}`);
+  const maniData=await fetch(`${API}/manifests`).then(r=>r.json());
+  fillSelect('cg-manifest',maniData,'manifest_no',m=>`#${m.manifest_no} — ${m.ship_name}`);
+  const inspData=await fetch(`${API}/inspections`).then(r=>r.json());
+  document.getElementById('cg-insp').innerHTML='<option value="">None</option>'+
+    inspData.map(i=>`<option value="${i.inspection_id}">#${i.inspection_id} ${i.outcome}</option>`).join('');
+  ['cg-type','cg-weight','cg-qty'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('cg-qty').value='1';
+  document.getElementById('cargo-modal-title').textContent=id?'Edit Cargo':'Add Cargo';
+  openModal('cargo-modal');
+}
+function editCargo(id){openCargoModal(id);}
+
+async function saveCargo(){
+  const body={
+    cargo_type:document.getElementById('cg-type').value.trim(),
+    weight_kg:document.getElementById('cg-weight').value,
+    quantity:document.getElementById('cg-qty').value||1,
+    owner_id:document.getElementById('cg-owner').value,
+    manifest_no:document.getElementById('cg-manifest').value,
+    inspection_id:document.getElementById('cg-insp').value||null,
+  };
+  if(!body.cargo_type||!body.owner_id||!body.manifest_no){toast('Type, Owner, Manifest required',true);return;}
+  try{
+    const url=editingId?`${API}/cargo/${editingId}`:`${API}/cargo`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    toast('Cargo saved!');closeModal('cargo-modal');loadCargo();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteCargo(id){
+  if(!confirm('Delete cargo?'))return;
+  try{const r=await fetch(`${API}/cargo/${id}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadCargo();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MANIFESTS
+// ═══════════════════════════════════════════════════════════
+async function loadManifests(){
+  try{
+    manifests=await fetch(`${API}/manifests`).then(r=>r.json());
+    const tbody=document.getElementById('mani-tbody');
+    if(!manifests.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No manifests.</td></tr>';return;}
+    tbody.innerHTML=manifests.map(m=>`<tr>
+      <td>#${m.manifest_no}</td>
+      <td>${m.issue_date?m.issue_date.split('T')[0]:'—'}</td>
+      <td>${m.ship_name}</td>
+      <td>${m.company_name}</td>
+      <td><span class="badge badge-blue">${m.total_items||0} items</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editManifest(${m.manifest_no})">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteManifest(${m.manifest_no})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+async function openManifestModal(id=null){
+  editingId=id;
+  await Promise.all([loadShips(),loadCompanies()]);
+  fillSelect('mn-ship',ships,'ship_imo',s=>s.ship_name);
+  fillSelect('mn-co',companies,'company_id',c=>c.company_name);
+  document.getElementById('mn-date').value='';
+  document.getElementById('mani-modal-title').textContent=id?'Edit Manifest':'Add Manifest';
+  if(id){
+    const m=manifests.find(x=>x.manifest_no===id);
+    if(m){
+      document.getElementById('mn-date').value=m.issue_date?m.issue_date.split('T')[0]:'';
+      document.getElementById('mn-ship').value=m.ship_imo;
+      document.getElementById('mn-co').value=m.company_id;
+    }
+  }
+  openModal('mani-modal');
+}
+function editManifest(id){openManifestModal(id);}
+
+async function saveManifest(){
+  const body={issue_date:document.getElementById('mn-date').value,ship_imo:document.getElementById('mn-ship').value,company_id:document.getElementById('mn-co').value};
+  if(!body.issue_date||!body.ship_imo||!body.company_id){toast('All fields required',true);return;}
+  try{
+    const url=editingId?`${API}/manifests/${editingId}`:`${API}/manifests`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    toast('Manifest saved!');closeModal('mani-modal');loadManifests();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteManifest(id){
+  if(!confirm('Delete manifest? All linked cargo will lose their manifest reference.'))return;
+  try{const r=await fetch(`${API}/manifests/${id}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadManifests();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INSPECTIONS
+// ═══════════════════════════════════════════════════════════
+async function loadInspections(){
+  try{
+    inspections=await fetch(`${API}/inspections`).then(r=>r.json());
+    const tbody=document.getElementById('insp-tbody');
+    if(!inspections.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No inspections.</td></tr>';return;}
+    tbody.innerHTML=inspections.map(i=>`<tr>
+      <td>${i.inspection_id}</td>
+      <td>${i.insp_date?i.insp_date.split('T')[0]:'—'}</td>
+      <td>${statusBadge(i.outcome)}</td>
+      <td>${i.inspector_name}</td>
+      <td>${i.worker_name||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-sm" onclick="editInspection(${i.inspection_id})">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteInspection(${i.inspection_id})">✕ Del</button>
+      </td></tr>`).join('');
+  }catch(e){}
+}
+
+async function openInspModal(id=null){
+  editingId=id;
+  await loadWorkers();
+  const officers=workers.filter(w=>w.is_inspection_officer);
+  document.getElementById('insp-officer').innerHTML='<option value="">None</option>'+
+    officers.map(w=>`<option value="${w.worker_id}">${w.worker_name} (${w.badge_no})</option>`).join('');
+  ['insp-date','insp-name'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('insp-modal-title').textContent=id?'Edit Inspection':'Add Inspection';
+  if(id){
+    const ins=inspections.find(x=>x.inspection_id===id);
+    if(ins){
+      document.getElementById('insp-date').value=ins.insp_date?ins.insp_date.split('T')[0]:'';
+      document.getElementById('insp-outcome').value=ins.outcome||'Cleared';
+      document.getElementById('insp-name').value=ins.inspector_name||'';
+      document.getElementById('insp-officer').value=ins.worker_id||'';
+    }
+  }
+  openModal('insp-modal');
+}
+function editInspection(id){openInspModal(id);}
+
+async function saveInspection(){
+  const body={
+    insp_date:document.getElementById('insp-date').value,
+    outcome:document.getElementById('insp-outcome').value,
+    inspector_name:document.getElementById('insp-name').value.trim(),
+    worker_id:document.getElementById('insp-officer').value||null,
+  };
+  if(!body.insp_date||!body.inspector_name){toast('Date and Inspector Name required',true);return;}
+  try{
+    const url=editingId?`${API}/inspections/${editingId}`:`${API}/inspections`;
+    const r=await fetch(url,{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    toast('Inspection saved!');closeModal('insp-modal');loadInspections();
+  }catch(e){toast(e.message,true);}
+}
+async function deleteInspection(id){
+  if(!confirm('Delete inspection?'))return;
+  try{const r=await fetch(`${API}/inspections/${id}`,{method:'DELETE'});const d=await r.json();if(d.error)throw new Error(d.error);toast('Deleted.');loadInspections();}catch(e){toast(e.message,true);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function fmt(dt){if(!dt)return'—';return new Date(dt).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'});}
+function escHtml(s){return String(s).replace(/'/g,"\\'");}
+function unescHtml(s){return s;}
+
+// DB connectivity check
+async function checkDB(){
+  try{
+    await fetch(`${API}/companies`);
+    document.getElementById('dbStatus').style.background='var(--green)';
+    document.getElementById('dbStatus').title='Connected to DB';
+  }catch{
+    document.getElementById('dbStatus').style.background='var(--red)';
+    document.getElementById('dbStatus').title='Cannot reach server — is Node.js running?';
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  checkDB();
+  loadShips();
+});
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+</script>
+</body>
+</html>
